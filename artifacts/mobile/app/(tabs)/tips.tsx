@@ -14,19 +14,19 @@ import { TipCard } from "@/components/TipCard";
 const CATEGORIES = ["All", "Hydration", "Sun Care", "Cleansing", "Nutrition", "Lifestyle"];
 
 const TIPS = [
-  { category: "Hydration", title: "Moisturize Daily", description: "Apply a non-comedogenic moisturizer morning and night to maintain your skin barrier.", icon: "droplet", color: "#7BBFB5" },
-  { category: "Hydration", title: "Drink More Water", description: "Aim for 8 glasses of water daily. Hydration from within keeps your skin plump and radiant.", icon: "coffee", color: "#7BBFB5" },
-  { category: "Hydration", title: "Use a Hyaluronic Serum", description: "Hyaluronic acid attracts moisture and holds it in the skin, reducing fine lines.", icon: "activity", color: "#7BBFB5" },
-  { category: "Sun Care", title: "Daily SPF is Essential", description: "Apply SPF 30+ every morning, even on cloudy days. UV rays cause premature aging.", icon: "sun", color: "#FF9500" },
-  { category: "Sun Care", title: "Reapply Sunscreen", description: "Reapply sunscreen every 2 hours when outdoors or after swimming or sweating.", icon: "refresh-cw", color: "#FF9500" },
-  { category: "Cleansing", title: "Double Cleanse at Night", description: "Use an oil cleanser to remove makeup and SPF, followed by a water-based cleanser.", icon: "wind", color: "#D4856A" },
-  { category: "Cleansing", title: "Don't Over-Cleanse", description: "Washing your face more than twice daily strips natural oils and disrupts the skin barrier.", icon: "shield", color: "#D4856A" },
-  { category: "Cleansing", title: "Clean Your Pillowcases", description: "Change pillowcases weekly to prevent bacteria and oil buildup that causes breakouts.", icon: "moon", color: "#D4856A" },
-  { category: "Nutrition", title: "Eat Antioxidant-Rich Foods", description: "Berries, leafy greens, and nuts protect your skin from free radical damage.", icon: "heart", color: "#34C759" },
-  { category: "Nutrition", title: "Omega-3 Fatty Acids", description: "Salmon, walnuts, and flaxseed reduce inflammation and keep skin soft and moisturized.", icon: "zap", color: "#34C759" },
-  { category: "Lifestyle", title: "Prioritize Sleep", description: "7-9 hours of sleep allows your skin to repair and regenerate overnight.", icon: "moon", color: "#9B59B6" },
-  { category: "Lifestyle", title: "Manage Stress", description: "Chronic stress elevates cortisol, which can trigger acne and other skin conditions.", icon: "smile", color: "#9B59B6" },
-  { category: "Lifestyle", title: "Exercise Regularly", description: "Exercise boosts circulation and delivers oxygen and nutrients to skin cells.", icon: "trending-up", color: "#9B59B6" },
+  { category: "Hydration", title: "Moisturize Daily", description: "Apply a non-comedogenic moisturizer morning and night to maintain your skin barrier.", icon: "droplet", color: "#00CEC9" },
+  { category: "Hydration", title: "Drink More Water", description: "Aim for 8 glasses of water daily. Hydration from within keeps your skin plump and radiant.", icon: "coffee", color: "#00CEC9" },
+  { category: "Hydration", title: "Use a Hyaluronic Serum", description: "Hyaluronic acid attracts moisture and holds it in the skin, reducing fine lines.", icon: "activity", color: "#00CEC9" },
+  { category: "Sun Care", title: "Daily SPF is Essential", description: "Apply SPF 30+ every morning, even on cloudy days. UV rays cause premature aging.", icon: "sun", color: "#FDCB6E" },
+  { category: "Sun Care", title: "Reapply Sunscreen", description: "Reapply sunscreen every 2 hours when outdoors or after swimming or sweating.", icon: "refresh-cw", color: "#FDCB6E" },
+  { category: "Cleansing", title: "Double Cleanse at Night", description: "Use an oil cleanser to remove makeup and SPF, followed by a water-based cleanser.", icon: "wind", color: "#A29BFE" },
+  { category: "Cleansing", title: "Don't Over-Cleanse", description: "Washing your face more than twice daily strips natural oils and disrupts the skin barrier.", icon: "shield", color: "#A29BFE" },
+  { category: "Cleansing", title: "Clean Your Pillowcases", description: "Change pillowcases weekly to prevent bacteria and oil buildup that causes breakouts.", icon: "moon", color: "#A29BFE" },
+  { category: "Nutrition", title: "Eat Antioxidant-Rich Foods", description: "Berries, leafy greens, and nuts protect your skin from free radical damage.", icon: "heart", color: "#6C5CE7" },
+  { category: "Nutrition", title: "Omega-3 Fatty Acids", description: "Salmon, walnuts, and flaxseed reduce inflammation and keep skin soft and moisturized.", icon: "zap", color: "#6C5CE7" },
+  { category: "Lifestyle", title: "Prioritize Sleep", description: "7-9 hours of sleep allows your skin to repair and regenerate overnight.", icon: "moon", color: "#FF6B9D" },
+  { category: "Lifestyle", title: "Manage Stress", description: "Chronic stress elevates cortisol, which can trigger acne and other skin conditions.", icon: "smile", color: "#FF6B9D" },
+  { category: "Lifestyle", title: "Exercise Regularly", description: "Exercise boosts circulation and delivers oxygen and nutrients to skin cells.", icon: "trending-up", color: "#FF6B9D" },
 ];
 
 export default function TipsScreen() {
@@ -44,7 +44,7 @@ export default function TipsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Skin Care Tips</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>Skin Care Tips</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           Expert advice for healthier, glowing skin
         </Text>
@@ -72,7 +72,7 @@ export default function TipsScreen() {
             <Text
               style={[
                 styles.categoryText,
-                { color: activeCategory === cat ? colors.primaryForeground : colors.mutedForeground },
+                { color: activeCategory === cat ? "#fff" : colors.mutedForeground },
               ]}
             >
               {cat}
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20 },
   header: { marginBottom: 20 },
-  title: { fontFamily: "Inter_700Bold", fontSize: 30, marginBottom: 4 },
+  title: { fontFamily: "Inter_700Bold", fontSize: 30, marginBottom: 4, letterSpacing: -0.5 },
   subtitle: { fontFamily: "Inter_400Regular", fontSize: 15 },
   categoryScroll: { marginBottom: 20, marginHorizontal: -20 },
   categories: { paddingHorizontal: 20, gap: 8 },

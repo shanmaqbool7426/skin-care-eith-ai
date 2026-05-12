@@ -1,15 +1,30 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useScan } from "@/context/ScanContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  ReminderSettings,
+  cancelReminder,
+  formatTime,
+  loadReminderSettings,
+  requestPermissions,
+  saveReminderSettings,
+  scheduleReminder,
+} from "@/utils/notifications";
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MINUTES = [0, 15, 30, 45];
 
 function StatBox({ label, value, color }: { label: string; value: string | number; color: string }) {
   const colors = useColors();
@@ -26,6 +41,10 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { scanHistory } = useScan();
 
+  const [reminder, setReminder] = useState<ReminderSettings>({ enabled: false, hour: 9, minute: 0 });
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const totalScans = scanHistory.length;
@@ -36,17 +55,56 @@ export default function ProfileScreen() {
   const allConditions = scanHistory.flatMap((s) => s.conditions.map((c) => c.name));
   const conditionFreq: Record<string, number> = {};
   allConditions.forEach((c) => { conditionFreq[c] = (conditionFreq[c] || 0) + 1; });
-  const topConditions = Object.entries(conditionFreq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const topConditions = Object.entries(conditionFreq).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const avgConfidence = scanHistory.length > 0
     ? Math.round(scanHistory.reduce((sum, s) => sum + s.confidence, 0) / scanHistory.length)
     : 0;
 
+  useEffect(() => {
+    loadReminderSettings().then(setReminder);
+  }, []);
+
+  const handleToggle = async (value: boolean) => {
+    if (Platform.OS === "web") {
+      Alert.alert("Not Available", "Notifications are not supported in the web preview. Use Expo Go on your device.");
+      return;
+    }
+    if (value) {
+      const granted = await requestPermissions();
+      if (!granted) {
+        Alert.alert("Permission Denied", "Please enable notifications in your device settings.");
+        return;
+      }
+      const updated = { ...reminder, enabled: true };
+      setReminder(updated);
+      await scheduleReminder(updated.hour, updated.minute);
+      await saveReminderSettings(updated);
+    } else {
+      const updated = { ...reminder, enabled: false };
+      setReminder(updated);
+      await cancelReminder();
+      await saveReminderSettings(updated);
+    }
+  };
+
+  const handleTimeChange = async (hour: number, minute: number) => {
+    const updated = { ...reminder, hour, minute };
+    setReminder(updated);
+    if (updated.enabled) {
+      setSaving(true);
+      await scheduleReminder(hour, minute);
+      await saveReminderSettings(updated);
+      setSaving(false);
+    } else {
+      await saveReminderSettings(updated);
+    }
+    setShowTimePicker(false);
+  };
+
   const routineTips = [
-    { time: "Morning", steps: ["Gentle cleanser", "Vitamin C serum", "Moisturizer", "SPF 30+"] },
-    { time: "Evening", steps: ["Double cleanse", "Retinol / treatment", "Night moisturizer"] },
+    { time: "Morning", icon: "sun" as const, steps: ["Gentle cleanser", "Vitamin C serum", "Moisturizer", "SPF 30+"] },
+    { time: "Evening", icon: "moon" as const, steps: ["Double cleanse", "Retinol / treatment", "Night moisturizer"] },
   ];
 
   return (
@@ -55,17 +113,19 @@ export default function ProfileScreen() {
       contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: insets.bottom + 100 }]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <View style={[styles.avatarCircle, { backgroundColor: colors.primary + "20" }]}>
-          <Feather name="user" size={36} color={colors.primary} />
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={[styles.title, { color: colors.foreground }]}>My Profile</Text>
+          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
+            {totalScans > 0 ? `${totalScans} scans tracked` : "Start scanning to build your profile"}
+          </Text>
         </View>
-        <Text style={[styles.name, { color: colors.text }]}>My Skin Profile</Text>
-        <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-          {totalScans > 0 ? `${totalScans} scans tracked` : "Start scanning to build your profile"}
-        </Text>
+        <View style={[styles.avatarCircle, { backgroundColor: colors.primary + "25", borderColor: colors.primary + "40", borderWidth: 1 }]}>
+          <Feather name="user" size={26} color={colors.primary} />
+        </View>
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Scan Overview</Text>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Scan Overview</Text>
       <View style={styles.statsGrid}>
         <StatBox label="Total Scans" value={totalScans} color={colors.primary} />
         <StatBox label="Low Risk" value={lowCount} color={colors.lowRisk} />
@@ -78,20 +138,23 @@ export default function ProfileScreen() {
           <View style={[styles.confidenceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View>
               <Text style={[styles.confidenceLabel, { color: colors.mutedForeground }]}>Avg. AI Confidence</Text>
-              <Text style={[styles.confidenceValue, { color: colors.text }]}>{avgConfidence}%</Text>
+              <Text style={[styles.confidenceValue, { color: colors.foreground }]}>{avgConfidence}%</Text>
             </View>
-            <View style={[styles.confidenceBadge, { backgroundColor: colors.primary + "18" }]}>
+            <View style={[styles.confidenceBadge, { backgroundColor: colors.primary + "20" }]}>
               <Feather name="award" size={22} color={colors.primary} />
             </View>
           </View>
 
           {topConditions.length > 0 && (
             <>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Most Detected Conditions</Text>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Most Detected</Text>
               <View style={[styles.conditionsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 {topConditions.map(([name, count], i) => (
-                  <View key={name} style={[styles.conditionRow, i < topConditions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                    <Text style={[styles.conditionName, { color: colors.text }]}>{name}</Text>
+                  <View
+                    key={name}
+                    style={[styles.conditionRow, i < topConditions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                  >
+                    <Text style={[styles.conditionName, { color: colors.foreground }]}>{name}</Text>
                     <View style={styles.conditionRight}>
                       <View style={[styles.progressBar, { backgroundColor: colors.surface }]}>
                         <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${Math.min(100, (count / totalScans) * 100)}%` as any }]} />
@@ -106,12 +169,14 @@ export default function ProfileScreen() {
         </>
       )}
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Routine</Text>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Daily Routine</Text>
       {routineTips.map((routine) => (
         <View key={routine.time} style={[styles.routineCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.routineHeader}>
-            <Feather name={routine.time === "Morning" ? "sun" : "moon"} size={18} color={colors.primary} />
-            <Text style={[styles.routineTime, { color: colors.text }]}>{routine.time} Routine</Text>
+            <View style={[styles.routineIconWrap, { backgroundColor: colors.primary + "20" }]}>
+              <Feather name={routine.icon} size={16} color={colors.primary} />
+            </View>
+            <Text style={[styles.routineTime, { color: colors.foreground }]}>{routine.time} Routine</Text>
           </View>
           {routine.steps.map((step, i) => (
             <View key={i} style={styles.routineStep}>
@@ -121,6 +186,77 @@ export default function ProfileScreen() {
           ))}
         </View>
       ))}
+
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Reminders</Text>
+      <View style={[styles.reminderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.reminderRow}>
+          <View style={styles.reminderLeft}>
+            <View style={[styles.reminderIcon, { backgroundColor: colors.secondary + "20" }]}>
+              <Feather name="bell" size={18} color={colors.secondary} />
+            </View>
+            <View>
+              <Text style={[styles.reminderLabel, { color: colors.foreground }]}>Daily Skin Check</Text>
+              <Text style={[styles.reminderSubtitle, { color: colors.mutedForeground }]}>
+                {reminder.enabled ? `Scheduled at ${formatTime(reminder.hour, reminder.minute)}` : "Not scheduled"}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={reminder.enabled}
+            onValueChange={handleToggle}
+            trackColor={{ false: colors.border, true: colors.primary + "80" }}
+            thumbColor={reminder.enabled ? colors.primary : colors.mutedForeground}
+          />
+        </View>
+
+        {reminder.enabled && (
+          <TouchableOpacity
+            onPress={() => setShowTimePicker(!showTimePicker)}
+            style={[styles.timePickerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            activeOpacity={0.8}
+          >
+            <Feather name="clock" size={16} color={colors.primary} />
+            <Text style={[styles.timePickerText, { color: colors.foreground }]}>
+              {formatTime(reminder.hour, reminder.minute)}
+            </Text>
+            <Feather name={showTimePicker ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
+
+        {showTimePicker && reminder.enabled && (
+          <View style={styles.timeGrid}>
+            <Text style={[styles.timeGridLabel, { color: colors.mutedForeground }]}>Select time</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timeOptions}>
+              {HOURS.map((h) =>
+                MINUTES.map((m) => (
+                  <TouchableOpacity
+                    key={`${h}:${m}`}
+                    onPress={() => handleTimeChange(h, m)}
+                    style={[
+                      styles.timeOption,
+                      {
+                        backgroundColor: reminder.hour === h && reminder.minute === m ? colors.primary : colors.surface,
+                        borderColor: reminder.hour === h && reminder.minute === m ? colors.primary : colors.border,
+                      },
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        { color: reminder.hour === h && reminder.minute === m ? "#fff" : colors.foreground },
+                      ]}
+                    >
+                      {formatTime(h, m)}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            {saving && <Text style={[styles.savingText, { color: colors.mutedForeground }]}>Saving...</Text>}
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -128,11 +264,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20 },
-  header: { alignItems: "center", marginBottom: 28, gap: 8 },
-  avatarCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  name: { fontFamily: "Inter_700Bold", fontSize: 24 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 28 },
+  avatarCircle: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  title: { fontFamily: "Inter_700Bold", fontSize: 30, marginBottom: 2 },
   tagline: { fontFamily: "Inter_400Regular", fontSize: 14 },
-  sectionTitle: { fontFamily: "Inter_600SemiBold", fontSize: 17, marginBottom: 12, marginTop: 8 },
+  sectionTitle: { fontFamily: "Inter_600SemiBold", fontSize: 17, marginBottom: 12, marginTop: 4 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
   statBox: { width: "47%", padding: 16, borderRadius: 16, borderWidth: 1, gap: 4 },
   statValue: { fontFamily: "Inter_700Bold", fontSize: 28 },
@@ -150,8 +286,23 @@ const styles = StyleSheet.create({
   conditionCount: { fontFamily: "Inter_500Medium", fontSize: 13, width: 24, textAlign: "right" },
   routineCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 12 },
   routineHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
+  routineIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   routineTime: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
   routineStep: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   stepDot: { width: 7, height: 7, borderRadius: 4 },
   stepText: { fontFamily: "Inter_400Regular", fontSize: 14 },
+  reminderCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 12, gap: 14 },
+  reminderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reminderLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  reminderIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  reminderLabel: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  reminderSubtitle: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
+  timePickerBtn: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 },
+  timePickerText: { fontFamily: "Inter_600SemiBold", fontSize: 15, flex: 1 },
+  timeGrid: { gap: 10 },
+  timeGridLabel: { fontFamily: "Inter_400Regular", fontSize: 13 },
+  timeOptions: { gap: 8, paddingBottom: 4 },
+  timeOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+  timeOptionText: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  savingText: { fontFamily: "Inter_400Regular", fontSize: 12 },
 });

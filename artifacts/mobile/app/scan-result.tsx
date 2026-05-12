@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -61,6 +62,12 @@ export default function ScanResultScreen() {
     high: "High Risk",
   };
 
+  const riskIcons = {
+    low: "check-circle" as const,
+    medium: "alert-circle" as const,
+    high: "alert-triangle" as const,
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -69,40 +76,43 @@ export default function ScanResultScreen() {
       >
         <View style={[styles.topBar, { paddingTop: Platform.OS === "web" ? 67 : insets.top + 8 }]}>
           <TouchableOpacity onPress={handleClose} style={[styles.closeBtn, { backgroundColor: colors.surface }]}>
-            <Feather name="x" size={20} color={colors.text} />
+            <Feather name="x" size={20} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={[styles.screenTitle, { color: colors.text }]}>Scan Result</Text>
+          <Text style={[styles.screenTitle, { color: colors.foreground }]}>Scan Result</Text>
           <View style={{ width: 38 }} />
         </View>
 
-        <View style={[styles.imageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.imageCard}>
           <Image source={{ uri: pendingResult.imageUri }} style={styles.skinImage} resizeMode="cover" />
-          <View style={styles.imageOverlay}>
-            <View style={[styles.confidencePill, { backgroundColor: "rgba(0,0,0,0.6)" }]}>
-              <Feather name="cpu" size={12} color="#fff" />
-              <Text style={styles.confidenceText}>{pendingResult.confidence}% confidence</Text>
+          <LinearGradient
+            colors={["transparent", "rgba(10,10,20,0.85)"]}
+            style={styles.imageGradient}
+          >
+            <View style={styles.imageBottomRow}>
+              <View style={[styles.confidencePill, { backgroundColor: "rgba(108,92,231,0.85)" }]}>
+                <Feather name="cpu" size={12} color="#fff" />
+                <Text style={styles.confidenceText}>{pendingResult.confidence}% confidence</Text>
+              </View>
+              <View style={[styles.areaPill, { backgroundColor: "rgba(255,255,255,0.12)" }]}>
+                <Text style={styles.areaText}>{pendingResult.bodyArea}</Text>
+              </View>
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
-        <View style={[styles.riskSection, { backgroundColor: riskColors[pendingResult.overallRisk] + "15", borderColor: riskColors[pendingResult.overallRisk] + "40" }]}>
+        <View style={[styles.riskSection, { backgroundColor: riskColors[pendingResult.overallRisk] + "15", borderColor: riskColors[pendingResult.overallRisk] + "35" }]}>
           <View>
             <Text style={[styles.riskSubLabel, { color: colors.mutedForeground }]}>Overall Assessment</Text>
             <Text style={[styles.riskLabel, { color: riskColors[pendingResult.overallRisk] }]}>
               {riskLabels[pendingResult.overallRisk]}
             </Text>
-            <Text style={[styles.riskArea, { color: colors.mutedForeground }]}>Area: {pendingResult.bodyArea}</Text>
           </View>
-          <View style={[styles.riskIcon, { backgroundColor: riskColors[pendingResult.overallRisk] + "25" }]}>
-            <Feather
-              name={pendingResult.overallRisk === "high" ? "alert-triangle" : pendingResult.overallRisk === "medium" ? "alert-circle" : "check-circle"}
-              size={28}
-              color={riskColors[pendingResult.overallRisk]}
-            />
+          <View style={[styles.riskIconWrap, { backgroundColor: riskColors[pendingResult.overallRisk] + "22" }]}>
+            <Feather name={riskIcons[pendingResult.overallRisk]} size={26} color={riskColors[pendingResult.overallRisk]} />
           </View>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Detected Conditions</Text>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Detected Conditions</Text>
         <View style={[styles.conditionsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {pendingResult.conditions.map((cond, i) => (
             <View
@@ -113,7 +123,7 @@ export default function ScanResultScreen() {
               ]}
             >
               <View style={styles.conditionLeft}>
-                <Text style={[styles.conditionName, { color: colors.text }]}>{cond.name}</Text>
+                <Text style={[styles.conditionName, { color: colors.foreground }]}>{cond.name}</Text>
                 <Text style={[styles.conditionDesc, { color: colors.mutedForeground }]}>{cond.description}</Text>
               </View>
               <View style={styles.conditionRight}>
@@ -124,12 +134,12 @@ export default function ScanResultScreen() {
           ))}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommendations</Text>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recommendations</Text>
         <View style={[styles.recsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {pendingResult.recommendations.map((rec, i) => (
             <View key={i} style={styles.recRow}>
               <View style={[styles.recDot, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.recText, { color: colors.text }]}>{rec}</Text>
+              <Text style={[styles.recText, { color: colors.foreground }]}>{rec}</Text>
             </View>
           ))}
         </View>
@@ -146,12 +156,19 @@ export default function ScanResultScreen() {
 
       <View style={[styles.footer, { paddingBottom: bottomPad + 16, backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+          style={styles.saveBtnWrap}
           onPress={handleSave}
           activeOpacity={0.85}
         >
-          <Feather name="save" size={18} color="#fff" />
-          <Text style={styles.saveBtnText}>Save to History</Text>
+          <LinearGradient
+            colors={["#8B7FF8", "#6C5CE7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.saveBtn}
+          >
+            <Feather name="save" size={18} color="#fff" />
+            <Text style={styles.saveBtnText}>Save to History</Text>
+          </LinearGradient>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.discardBtn, { borderColor: colors.border }]}
@@ -171,16 +188,18 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 16 },
   closeBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   screenTitle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
-  imageCard: { borderRadius: 20, overflow: "hidden", borderWidth: 1, marginBottom: 16, height: 220 },
-  skinImage: { width: "100%", height: "100%" },
-  imageOverlay: { position: "absolute", bottom: 12, left: 12 },
+  imageCard: { borderRadius: 20, overflow: "hidden", marginBottom: 16, height: 230 },
+  skinImage: { width: "100%", height: "100%", position: "absolute" },
+  imageGradient: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100, justifyContent: "flex-end", padding: 14 },
+  imageBottomRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   confidencePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
   confidenceText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "#fff" },
+  areaPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 },
+  areaText: { fontFamily: "Inter_500Medium", fontSize: 12, color: "#fff" },
   riskSection: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderRadius: 16, padding: 18, borderWidth: 1, marginBottom: 20 },
-  riskSubLabel: { fontFamily: "Inter_400Regular", fontSize: 12, marginBottom: 2 },
+  riskSubLabel: { fontFamily: "Inter_400Regular", fontSize: 12, marginBottom: 4 },
   riskLabel: { fontFamily: "Inter_700Bold", fontSize: 22 },
-  riskArea: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 2 },
-  riskIcon: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  riskIconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
   sectionTitle: { fontFamily: "Inter_600SemiBold", fontSize: 17, marginBottom: 10 },
   conditionsCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden", marginBottom: 20 },
   conditionRow: { flexDirection: "row", padding: 14, gap: 12 },
@@ -196,10 +215,11 @@ const styles = StyleSheet.create({
   warningBox: { flexDirection: "row", gap: 12, borderRadius: 14, padding: 14, borderWidth: 1, alignItems: "flex-start" },
   warningText: { fontFamily: "Inter_500Medium", fontSize: 13, flex: 1, lineHeight: 19 },
   footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, gap: 8 },
-  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 15, borderRadius: 14 },
+  saveBtnWrap: { borderRadius: 14, overflow: "hidden" },
+  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 15 },
   saveBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#fff" },
   discardBtn: { alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 14, borderWidth: 1 },
   discardText: { fontFamily: "Inter_500Medium", fontSize: 15 },
-  errorText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center", marginBottom: 20 },
+  errorText: { fontFamily: "Inter_400Regular", fontSize: 16, textAlign: "center", marginBottom: 20, marginTop: 60 },
   backBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, alignSelf: "center" },
 });
