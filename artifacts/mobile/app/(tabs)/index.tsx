@@ -30,7 +30,7 @@ const CONDITIONS_PREVIEW = [
 export default function ScannerScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { setPendingResult } = useScan();
+  const { setPendingResult, scanHistory } = useScan();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
@@ -174,6 +174,31 @@ export default function ScannerScreen() {
         <Text style={[styles.galleryText, { color: colors.accent }]}>Upload from Gallery</Text>
       </TouchableOpacity>
 
+      {/* Routine Banner */}
+      <TouchableOpacity onPress={() => router.push("/routine")} activeOpacity={0.85} style={styles.routineBannerWrap}>
+        <LinearGradient
+          colors={["#4834D4", "#6C5CE7", "#00CEC980"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.routineBanner}
+        >
+          <View style={[styles.routineIconWrap, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+            <Feather name="list" size={20} color="#fff" />
+          </View>
+          <View style={styles.routineBannerText}>
+            <Text style={styles.routineBannerTitle}>
+              {scanHistory.length > 0 ? "View Your Personalized Routine" : "Build Your Skin Routine"}
+            </Text>
+            <Text style={styles.routineBannerSub}>
+              {scanHistory.length > 0
+                ? `Tailored to your ${scanHistory.length} scan${scanHistory.length > 1 ? "s" : ""}`
+                : "AI-generated morning & evening steps"}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color="rgba(255,255,255,0.7)" />
+        </LinearGradient>
+      </TouchableOpacity>
+
       <View style={[styles.detectsSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.detectsHeader}>
           <Feather name="zap" size={15} color={colors.primary} />
@@ -225,8 +250,14 @@ const styles = StyleSheet.create({
   statusBox: { alignItems: "center", marginTop: 20, gap: 4 },
   statusTitle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
   statusSub: { fontFamily: "Inter_400Regular", fontSize: 13 },
-  galleryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 14, borderRadius: 14, borderWidth: 1, marginBottom: 20 },
+  galleryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
   galleryText: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
+  routineBannerWrap: { marginBottom: 16, borderRadius: 16, overflow: "hidden" },
+  routineBanner: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
+  routineIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  routineBannerText: { flex: 1, gap: 2 },
+  routineBannerTitle: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: "#fff" },
+  routineBannerSub: { fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.7)" },
   detectsSection: { borderRadius: 16, padding: 16, borderWidth: 1, marginBottom: 16 },
   detectsHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 14 },
   detectsTitle: { fontFamily: "Inter_600SemiBold", fontSize: 15 },
