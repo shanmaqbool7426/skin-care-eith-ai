@@ -32,6 +32,14 @@ function RootLayoutNav() {
           animation: "slide_from_bottom",
         }}
       />
+      <Stack.Screen
+        name="routine"
+        options={{
+          headerShown: false,
+          presentation: "card",
+          animation: "slide_from_right",
+        }}
+      />
     </Stack>
   );
 }
